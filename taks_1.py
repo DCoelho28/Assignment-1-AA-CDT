@@ -54,9 +54,7 @@ data_clean.loc[:, ['x1_initial_position', 'y1_initial_position', 'x2_initial_pos
 for j in range(comeca.size):
     #for i in range(stack[j], stack[stack.size-1], stack[j+1]):
     #    print(f"stack[j] = {stack[j]}, stack[j+1] = {stack[j+1]}")
-    id_inicial_da_trajetoria = comeca[j]
-    id_final_da_trajetoria = acaba[j+1]
-    data_clean.loc[id_inicial_da_trajetoria:id_final_da_trajetoria, ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']] = data.loc[id_inicial_da_trajetoria, ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']].values 
+    data_clean.loc[comeca[j]:acaba[j+1], ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']] = data.loc[comeca[j], ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']].values 
     #repeated_data = pd.concat([unique_initial_positions] * ((acaba[j+1] + 1) - comeca[j]), ignore_index=True)
 
 #repeated_data = repeated_data.sort_values(by=['Id'], ignore_index=True)
