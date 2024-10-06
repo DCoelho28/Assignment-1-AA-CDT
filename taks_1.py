@@ -66,6 +66,8 @@ print(f"data_clean set size: {len(data_clean)}")
 data_clean = data_clean.drop(columns=['v_x_1', 'v_y_1', 'v_x_2', 'v_y_2', 'v_x_3', 'v_y_3'], inplace=False)
 # a prof diz que t > 0.0
 data_clean = data_clean[(data_clean['t'] != 0.0)]
+coluna_Id = data_clean.pop('Id')
+data_clean.insert(0, 'Id', coluna_Id)
 
 output_path = r'C:\Users\vidcoelh\Documents\Pessoal\AA\data_clean.csv'
 data_clean.to_csv(output_path,index=False)
@@ -81,7 +83,10 @@ print(f"Total before clean =  1285002")
 
 ################################################################################################
 
+#dados de entrada
 features_X = ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position', 't']
+
+#o que queremos prever 
 y = ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']
 
 entry_train = train[features_X]
@@ -106,6 +111,16 @@ output_val_prediction = pipeline.predict(entry_val)
 #output_val_prediction.to_csv(output_path,index=False)
 
 output_test_prediction = pipeline.predict(entry_test)
+columns = ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']
+# Create a DataFrame from the predicted values
+df_output = pd.DataFrame(output_test_prediction, columns=columns)
+# Add a column for the 'id' values
+df_output['id'] = df_output.index + 1
+# Reorder the columns to match the desired format
+df_output = df_output[['id', 'x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
+#df_output = pd.DataFrame({'predicted_values': output_test_prediction})
+output_path = r'C:\Users\vidcoelh\Documents\Pessoal\AA\output_test.csv'
+df_output.to_csv(output_path,index=False)
 #output_path = r'C:\Users\vidcoelh\Documents\Pessoal\AA\output_test_prediction.csv'
 #output_test_prediction.to_csv(output_path,index=False)
 
@@ -113,9 +128,10 @@ rmse_train =  math.sqrt(mean_squared_error(output_train, output_train_prediction
 rmse_val = math.sqrt(mean_squared_error(output_val, output_val_prediction))
 rmse_test = math.sqrt(mean_squared_error(output_test, output_test_prediction))
 
-print(f"Train RMSE: {rmse_train}")
-print(f"Validation RMSE: {rmse_val}")
-print(f"Test RMSE: {rmse_test}")
+#se o MSE do dado de treino for muito menor que o MSE de validação e de treino --> modelo está a sofrer overfitting (modelo ajusta-se demasiado aos dados de treino)
+print(f"Train MSE: {rmse_train}")
+print(f"Validation MSE: {rmse_val}")
+print(f"Test MSE: {rmse_test}")
 
 def plot_y_yhat(y_val,y_pred, plot_title = "plot"):
     labels = ['x_1','y_1','x_2','y_2','x_3','y_3']
