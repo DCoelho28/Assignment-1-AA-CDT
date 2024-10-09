@@ -1,0 +1,48 @@
+def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degrees=range(1, 15)):
+    # Sample 1% of the training data
+    sample_size = int(0.01 * len(X_train))
+    indices = np.random.choice(X_train.index, size=sample_size, replace=False)
+    X_sample = X_train.loc[indices]
+    y_sample = y_train.loc[indices]
+
+    best_rmse = float('inf')
+    best_model = None
+    best_degree = None
+    degree_distribution = []
+
+    for degree in degrees:
+        # Create polynomial features
+        poly_features = PolynomialFeatures(degree=degree)
+        
+        # Create pipeline
+        model = Pipeline([
+            ('scaler', StandardScaler()),
+            ('polynomial_features', poly_features),
+            ('regressor', regressor if regressor else LinearRegression())
+        ])
+        
+        # Fit the model
+        model.fit(X_sample, y_sample)
+
+        # Number of features generated
+        n_features = poly_features.n_output_features_
+        print(f'Degree: {degree}, Number of Features: {n_features}')
+        
+        # Make predictions on validation set
+        y_pred = model.predict(X_val)
+
+        # Calculate RMSE
+        rmse = mean_squared_error(y_val, y_pred, squared=False)
+        print(f'Degree: {degree}, RMSE: {rmse}')
+
+        # Check for the best model
+        if rmse < best_rmse:
+            best_rmse = rmse
+            best_model = model
+            best_degree = degree
+
+        # Collect degree for distribution analysis
+        degree_distribution.append(degree)
+
+    print(f'Best Degree: {best_degree}, Best RMSE: {best_rmse}')
+    return best_model, best_rmse, best_degree, degree_distribution
