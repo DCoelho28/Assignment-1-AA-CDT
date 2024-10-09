@@ -1,3 +1,32 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression, RidgeCV
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+
+# Data loading and preprocessing (as in your original code)
+data = pd.read_csv('./X_train.csv')
+data_clean = data[(data['x_1'] != 0.0) | (data['y_1'] != 0.0) |
+                  (data['x_2'] != 0.0) | (data['y_2'] != 0.0) |
+                  (data['x_3'] != 0.0) | (data['y_3'] != 0.0)]
+
+train, val = train_test_split(data_clean, test_size=0.2, random_state=42)
+
+# Define the feature and target variables
+features_X = ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 
+              'y2_initial_position', 'x3_initial_position', 'y3_initial_position', 't']
+y = ['x_1', 'y_1', 'x_2', 'y_2', 'y_3']
+
+entry_train = train[features_X]
+output_train = train[y]
+
+entry_val = val[features_X]
+output_val = val[y]
+
 def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degrees=range(1, 15)):
     # Sample 1% of the training data
     sample_size = int(0.01 * len(X_train))
@@ -46,3 +75,29 @@ def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, deg
 
     print(f'Best Degree: {best_degree}, Best RMSE: {best_rmse}')
     return best_model, best_rmse, best_degree, degree_distribution
+
+# Run the validation function
+regressor = RidgeCV()  # You can change this to LinearRegression() or another regressor
+best_model, best_rmse, best_degree, degree_distribution = validate_poly_regression(
+    entry_train, output_train, entry_val, output_val, regressor=regressor
+)
+
+# Analyze distribution of selected polynomial degrees
+def plot_degree_distribution(degree_distribution):
+    plt.hist(degree_distribution, bins=np.arange(1, 16) - 0.5, edgecolor='black')
+    plt.xlabel('Polynomial Degree')
+    plt.ylabel('Frequency')
+    plt.title('Distribution of Selected Polynomial Degrees')
+    plt.xticks(range(1, 15))
+    plt.show()
+
+# Run multiple tests to analyze degree distribution
+num_tests = 10
+all_degree_distributions = []
+
+for _ in range(num_tests):
+    _, _, _, degree_distribution = validate_poly_regression(entry_train, output_train, entry_val, output_val, regressor=regressor)
+    all_degree_distributions.extend(degree_distribution)
+
+# Plot the distribution
+plot_degree_distribution(all_degree_distributions)
