@@ -9,6 +9,7 @@ import numpy as np
 import math
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import RidgeCV
+from sklearn.feature_selection import SelectKBest, f_regression
 
 # Data loading and cleaning remains unchanged
 data = pd.read_csv('./X_train.csv')
@@ -56,44 +57,43 @@ output_val = one_percent_val[y]
 
 entry_test = test[features_X]
 
-def validate_poly_regression(X_train, y_train, X_val, y_val, degrees=range(1, 15)):
-    best_rmse = float('inf')
+def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degree=8, max_features=None):
+    best_rmse = 2
     best_model = None
     best_degree = None
     best_alpha = None
 
     # Loop pelos graus polinomiais
-    for degree in degrees:
-        # RidgeCV para ajustar os valores de alpha
-        ridge_cv = RidgeCV(alphas=np.logspace(-6, 6, 13), store_cv_results=True)
+    #for degree in degrees:
+    # RidgeCV para ajustar os valores de alpha
+    regressor = RidgeCV(alphas=np.logspace(-6, 6, 13), store_cv_results=True)
+    #select = SelectKBest(f_regression, k=50)
+    # Pipeline com as transformações necessárias
+    poly_reg_model = make_pipeline(PolynomialFeatures(degree),  StandardScaler(), regressor)
+    poly_reg_model.fit(X_train, y_train)
+    # Previsões
+    y_pred = poly_reg_model.predict(X_val)
+    rmse = np.sqrt(mean_squared_error(y_val, y_pred))
 
-        # Pipeline com as transformações necessárias
-        poly_reg_model = make_pipeline(PolynomialFeatures(degree), StandardScaler(), ridge_cv)
-        poly_reg_model.fit(X_train, y_train)
+    # Número de características geradas
+    poly_features = poly_reg_model.named_steps['polynomialfeatures']
+    print(f"Degree {degree}: Number of features = {poly_features.n_output_features_}, Best alpha: {regressor.alpha_}")
 
-        # Previsões
-        y_pred = poly_reg_model.predict(X_val)
-        rmse = np.sqrt(mean_squared_error(y_val, y_pred))
+    # Atualiza se o RMSE for melhor
+    if rmse < best_rmse:
+        best_rmse = rmse
+        best_model = poly_reg_model
+        best_degree = degree
+        best_alpha = regressor.alpha_
 
-        # Número de características geradas
-        poly_features = poly_reg_model.named_steps['polynomialfeatures']
-        # print(f"Degree {degree}: Number of features = {poly_features.n_output_features_}, Best alpha: {ridge_cv.alpha_}")
-
-        # Atualiza se o RMSE for melhor
-        if rmse < best_rmse:
-            best_rmse = rmse
-            best_model = poly_reg_model
-            best_degree = degree
-            best_alpha = ridge_cv.alpha_
-
-    # print(f"Best Degree: {best_degree}, Best Alpha: {best_alpha}, Best RMSE: {best_rmse}")
+    print(f"Best Degree: {best_degree}, Best Alpha: {best_alpha}, Best RMSE: {best_rmse}")
     return best_model, best_rmse, best_degree, best_alpha
 
 # Rodando a validação
     
-for n in range(0,9):
-    best_model, best_rmse, best_degree, best_alpha = validate_poly_regression(entry_train, output_train, entry_val, output_val)
-    print(f"Best Model: {best_model},Best Degree: {best_degree}, Best Alpha: {best_alpha}, Best RMSE: {best_rmse}")
+# for n in range(0,9):
+best_model, best_rmse, best_degree, best_alpha = validate_poly_regression(entry_train, output_train, entry_val, output_val)
+    # print(f"Best Model: {best_model},Best Degree: {best_degree}, Best Alpha: {best_alpha}, Best RMSE: {best_rmse}")
 
 
 # Previsões com o melhor modelo
@@ -135,6 +135,10 @@ plot_y_yhat(np.array(output_train), output_train_prediction, plot_title="y_yhat_
 # Previsões finais para o conjunto de teste
 columns = ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']
 
-df_output = pd.DataFrame(output_train_prediction, columns=columns)
+df_output = pd.DataFrame(best_model.predict(entry_test), columns=columns)
+# df_output = pd.DataFrame(output_test_prediction, columns=columns)
 df_output['id'] = df_output.index
 df_output = df_output[['id', 'x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
+
+output_path = ('./polynomial_submission.csv')
+df_output.to_csv(output_path,index=False)
