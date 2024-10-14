@@ -57,7 +57,7 @@ output_val = one_percent_val[y]
 
 entry_test = test[features_X]
 
-def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degree=8, max_features=None):
+def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degree=7, max_features=None):
     best_rmse = 2
     best_model = None
     best_degree = None
@@ -66,7 +66,7 @@ def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, deg
     # Loop pelos graus polinomiais
     #for degree in degrees:
     # RidgeCV para ajustar os valores de alpha
-    regressor = RidgeCV(alphas=np.logspace(-6, 6, 13), store_cv_results=True)
+    regressor = RidgeCV(alphas=0.001, store_cv_results=True)
     #select = SelectKBest(f_regression, k=50)
     # Pipeline com as transformações necessárias
     poly_reg_model = make_pipeline(PolynomialFeatures(degree),  StandardScaler(), regressor)
