@@ -38,8 +38,8 @@ data_clean.insert(0, 'Id', coluna_Id)
 
 # 80% to train, 20% to val
 train, val = train_test_split(data_clean, test_size=0.2, random_state=42)
-one_percent_train, _ = train_test_split(train, train_size=0.004, random_state=42)
-one_percent_val, _ = train_test_split(val, train_size=0.004, random_state=42)
+one_percent_train, _ = train_test_split(train, train_size=0.01, random_state=42)
+one_percent_val, _ = train_test_split(val, train_size=0.01, random_state=42)
 
 test = pd.read_csv('./X_test.csv')
 cols = ['Id','t','x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']
@@ -161,5 +161,5 @@ df_output = pd.DataFrame(best_model.predict(entry_test), columns=columns)
 df_output['id'] = df_output.index
 df_output = df_output[['id', 'x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
 
-output_path = ('./polynomial_submission.csv')
+output_path = ('./reduced_polynomial_submission.csv')
 df_output.to_csv(output_path,index=False)
