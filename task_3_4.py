@@ -32,7 +32,7 @@ data_clean.loc[:, ['x1_initial_position', 'y1_initial_position', 'x2_initial_pos
 for j in range(comecaIndex.size):
     data_clean.loc[comecaIndex[j]:acabaIndex[j+1], ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']] = data.loc[comecaIndex[j], ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']].values 
 
-data_clean = data_clean.drop(columns=['v_x_1', 'v_y_1', 'v_x_2', 'v_y_2', 'v_x_3', 'v_y_3'], inplace=False)
+#data_clean = data_clean.drop(columns=['v_x_1', 'v_y_1', 'v_x_2', 'v_y_2', 'v_x_3', 'v_y_3'], inplace=False)
 data_clean = data_clean[(data_clean['t'] != 0.0)]
 coluna_Id = data_clean.pop('Id')
 data_clean.insert(0, 'Id', coluna_Id)
