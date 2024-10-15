@@ -56,12 +56,36 @@ def createFeatures(data_clean):
     data_clean['inv_d_12'] = 1 / data_clean['d_12']
     data_clean['inv_d_13'] = 1 / data_clean['d_13']
     data_clean['inv_d_32'] = 1 / data_clean['d_32']
-    
-    return data_clean.values
+
     # centroid of distance
+    data_clean['variance_x'] = data_clean[['x1_initial_position', 'x2_initial_position', 'x3_initial_position']].var(axis=1)
+    data_clean['variance_y'] = data_clean[['y1_initial_position', 'y2_initial_position', 'y3_initial_position']].var(axis=1)
+    
+    # velocities
+    data_clean['v_rel_x12'] = data_clean['v_x_1'] - data_clean['v_x_2']
+    data_clean['v_rel_y12'] = data_clean['v_y_1'] - data_clean['v_y_2']
+    data_clean['v_rel_x13'] = data_clean['v_x_1'] - data_clean['v_x_3']
+    data_clean['v_rel_y13'] = data_clean['v_y_1'] - data_clean['v_y_3']
+    data_clean['v_rel_x32'] = data_clean['v_x_3'] - data_clean['v_x_2']
+    data_clean['v_rel_y32'] = data_clean['v_y_3'] - data_clean['v_y_2']
+
+    # speeds
+    data_clean['speed_1'] = np.sqrt(np.power(data_clean['v_x_1'], 2) + np.power(data_clean['v_y_1'], 2))
+    data_clean['speed_2'] = np.sqrt(np.power(data_clean['v_x_2'], 2) + np.power(data_clean['v_y_2'], 2))
+    data_clean['speed_3'] = np.sqrt(np.power(data_clean['v_x_3'], 2) + np.power(data_clean['v_y_3'], 2))
+
+    # normalized velocities
+    data_clean['v_x_ratio_12'] = data_clean['v_x_1'] / data_clean['v_x_2']
+    data_clean['v_y_ratio_12'] = data_clean['v_y_1'] / data_clean['v_y_2']
+    data_clean['v_x_ratio_13'] = data_clean['v_x_1'] / data_clean['v_x_3']
+    data_clean['v_y_ratio_13'] = data_clean['v_y_1'] / data_clean['v_y_3']
+    data_clean['v_x_ratio_32'] = data_clean['v_x_3'] / data_clean['v_x_2']
+    data_clean['v_y_ratio_32'] = data_clean['v_y_3'] / data_clean['v_y_2']
+    
     #data_clean['centroid_x'] = (data_clean['x1_initial_position'] + data_clean['x2_initial_position'] + data_clean['x3_initial_position']) / 3
     #data_clean['centroid_y'] = (data_clean['y1_initial_position'] + data_clean['y2_initial_position'] + data_clean['y3_initial_position']) / 3
     
+    return data_clean.values
     # variance of distance
     #data_clean['variance_x'] = data_clean[['x1_initial_position', 'x2_initial_position', 'x3_initial_position']].var(axis=1)
     #data_clean['variance_y'] = data_clean[['y1_initial_position', 'y2_initial_position', 'y3_initial_position']].var(axis=1)
@@ -120,37 +144,37 @@ output_val = one_percent_val[y]
 
 entry_test = test[features_X]
 
-def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degrees=range(1,6), max_features=None):
+def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degree=4, max_features=None):
     best_rmse = float('inf')
     best_model = None
     best_degree = None
     best_alpha = None
 
     transformer = ColumnTransformer(transformers=[('features', FunctionTransformer(createFeatures, validate=False), ['x1_initial_position', 'y1_initial_position', 'x2_initial_position',
-    'y2_initial_position', 'x3_initial_position', 'y3_initial_position','t'])], remainder='passthrough')
+    'y2_initial_position', 'x3_initial_position', 'y3_initial_position','t', 'v_x_1', 'v_x_2', 'v_x_3', 'v_y_1', 'v_y_2', 'v_y_3'])], remainder='passthrough')
 
     # Loop pelos graus polinomiais
-    for degree in degrees:
+    #for degree in degrees:
     # RidgeCV para ajustar os valores de alpha
-        regressor = RidgeCV(alphas=np.logspace(-6, 6, 13), store_cv_results=True)
+    regressor = RidgeCV(alphas=0.001, store_cv_results=True)
     #select = SelectKBest(f_regression, k=50)
     # Pipeline com as transformações necessárias
-        poly_reg_model = make_pipeline(transformer, PolynomialFeatures(degree),  StandardScaler(), regressor)
-        poly_reg_model.fit(X_train, y_train)
+    poly_reg_model = make_pipeline(transformer, PolynomialFeatures(degree),  StandardScaler(), regressor)
+    poly_reg_model.fit(X_train, y_train)
     # Previsões
-        y_pred = poly_reg_model.predict(X_val)
-        rmse = np.sqrt(mean_squared_error(y_val, y_pred))
+    y_pred = poly_reg_model.predict(X_val)
+    rmse = np.sqrt(mean_squared_error(y_val, y_pred))
 
     # Número de características geradas
-        poly_features = poly_reg_model.named_steps['polynomialfeatures']
-        print(f"Degree {degree}: Number of features = {poly_features.n_output_features_}, Best alpha: {regressor.alpha_}")
+    poly_features = poly_reg_model.named_steps['polynomialfeatures']
+    print(f"Degree {degree}: Number of features = {poly_features.n_output_features_}, Best alpha: {regressor.alpha_}")
 
     # Atualiza se o RMSE for melhor
-        if rmse < best_rmse:
-            best_rmse = rmse
-            best_model = poly_reg_model
-            best_degree = degree
-            best_alpha = regressor.alpha_
+    if rmse < best_rmse:
+        best_rmse = rmse
+        best_model = poly_reg_model
+        best_degree = degree
+        best_alpha = regressor.alpha_
 
     print(f"Best Degree: {best_degree}, Best Alpha: {best_alpha}, Best RMSE: {best_rmse}")
     return best_model, best_rmse, best_degree, best_alpha
