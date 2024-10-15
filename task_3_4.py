@@ -57,6 +57,7 @@ def createFeatures(data_clean):
     data_clean['inv_d_13'] = 1 / data_clean['d_13']
     data_clean['inv_d_32'] = 1 / data_clean['d_32']
     
+    return data_clean.values
     # centroid of distance
     #data_clean['centroid_x'] = (data_clean['x1_initial_position'] + data_clean['x2_initial_position'] + data_clean['x3_initial_position']) / 3
     #data_clean['centroid_y'] = (data_clean['y1_initial_position'] + data_clean['y2_initial_position'] + data_clean['y3_initial_position']) / 3
