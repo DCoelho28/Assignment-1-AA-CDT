@@ -1,12 +1,32 @@
 Traceback (most recent call last):
-  File "c:\Users\vidcoelh\Documents\Pessoal\AA\task_1.py", line 132, in <module>
-    entry_test  = test[features_X]
-                  ~~~~^^^^^^^^^^^^
-  File "C:\Python\Python3.12\Lib\site-packages\pandas\core\frame.py", line 4108, in __getitem__
-    indexer = self.columns._get_indexer_strict(key, "columns")[1]
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python\Python3.12\Lib\site-packages\pandas\core\indexes\base.py", line 6200, in _get_indexer_strict
-    self._raise_if_missing(keyarr, indexer, axis_name)
-  File "C:\Python\Python3.12\Lib\site-packages\pandas\core\indexes\base.py", line 6252, in _raise_if_missing
-    raise KeyError(f"{not_found} not in index")
-KeyError: "['rel_x12', 'rel_y12', 'rel_x13', 'rel_y13', 'rel_x32', 'rel_y32', 'd_12', 'd_13', 'd_32', 'inv_d_12', 'inv_d_13', 'inv_d_32', 'v_rel_x12', 'v_rel_y12', 'v_rel_x13', 'v_rel_y13', 'v_rel_x32', 'v_rel_y32', 'speed_1', 'speed_2', 'speed_3', 'v_x_ratio_12', 'v_y_ratio_12', 'v_x_ratio_13', 'v_y_ratio_13', 'v_x_ratio_32', 'v_y_ratio_32'] not in index"
+  File "c:\Users\vidcoelh\Documents\Pessoal\AA\task_3_4.py", line 160, in <module>
+    best_model, best_rmse, best_degree, best_alpha = validate_poly_regression(entry_train, output_train, entry_val, output_val)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\vidcoelh\Documents\Pessoal\AA\task_3_4.py", line 138, in validate_poly_regression
+    poly_reg_model.fit(X_train, y_train)
+  File "C:\Python\Python3.12\Lib\site-packages\sklearn\base.py", line 1473, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python\Python3.12\Lib\site-packages\sklearn\pipeline.py", line 469, in fit
+    Xt = self._fit(X, y, routed_params)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python\Python3.12\Lib\site-packages\sklearn\pipeline.py", line 406, in _fit
+    X, fitted_transformer = fit_transform_one_cached(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python\Python3.12\Lib\site-packages\joblib\memory.py", line 312, in __call__
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python\Python3.12\Lib\site-packages\sklearn\pipeline.py", line 1310, in _fit_transform_one
+    res = transformer.fit_transform(X, y, **params.get("fit_transform", {}))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python\Python3.12\Lib\site-packages\sklearn\utils\_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python\Python3.12\Lib\site-packages\sklearn\base.py", line 1473, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python\Python3.12\Lib\site-packages\sklearn\compose\_column_transformer.py", line 1003, in fit_transform
+    self._validate_output(Xs)
+  File "C:\Python\Python3.12\Lib\site-packages\sklearn\compose\_column_transformer.py", line 744, in _validate_output
+    raise ValueError(
+ValueError: The output of the 'features' transformer should be 2D (numpy array, scipy sparse array, dataframe).
