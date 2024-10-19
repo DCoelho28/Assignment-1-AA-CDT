@@ -1,134 +1,130 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.pipeline import make_pipeline
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import math
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import RidgeCV
-from sklearn.feature_selection import SelectKBest, f_regression
 
-# Data loading and cleaning remains unchanged
+# data to use from the X_train.csv file
 data = pd.read_csv('./X_train.csv')
 
-# Data cleaning step
-data_clean = data[(data['x_1'] != 0.0) | (data['y_1'] != 0.0) |
+# data clean up, removing the big amount of uneccessary 0.0
+dataClean = data[(data['x_1'] != 0.0) | (data['y_1'] != 0.0) |
             (data['x_2'] != 0.0) | (data['y_2'] != 0.0) |
             (data['x_3'] != 0.0) | (data['y_3'] != 0.0)]
 
-initial_positions = data_clean[(data_clean['t'] == 0.0)]
-unique_initial_positions = initial_positions.drop_duplicates(subset=['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3'])
+# comecaIndex is a stack with all the initial positions (where t == 0.0)
+# since the uneccessary 0.0 were deleted, this is grouping only the initial positions
+comecaIndex = np.hstack((dataClean[dataClean.t == 0.0].index.values))
 
-comecaIndex = np.hstack((data_clean[data_clean.t == 0.0].index.values))
-acabaIndex = np.hstack((data_clean[data_clean.t == 0.0].index.values - 1, data_clean.iloc[-1]['Id']))
+# acabaIndex is a stack with all the final positions (where t == 0.0, but - 1 because this way is getting the row before the initial positions, that corresponds to the final positions)
+# in the final is adding the last line, because the last final positions does not have in front an initial position
+# since the uneccessary 0.0 were deleted, this is grouping only the initial positions
+acabaIndex = np.hstack((dataClean[dataClean.t == 0.0].index.values - 1, dataClean.iloc[-1]['Id']))
 
-data_clean.loc[:, ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']] = 0.0
-
+# add to dataClean the initial positions corresponding to each position from each iteration
+# add the initial positions from where the iteration starts until where the iteration ends
+dataClean.loc[:, ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']] = 0.0
 for j in range(comecaIndex.size):
-    data_clean.loc[comecaIndex[j]:acabaIndex[j+1], ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']] = data.loc[comecaIndex[j], ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']].values 
+    dataClean.loc[comecaIndex[j]:acabaIndex[j+1], ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']] = data.loc[comecaIndex[j], ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']].values 
 
-data_clean = data_clean.drop(columns=['v_x_1', 'v_y_1', 'v_x_2', 'v_y_2', 'v_x_3', 'v_y_3'], inplace=False)
-data_clean = data_clean[(data_clean['t'] != 0.0)]
-coluna_Id = data_clean.pop('Id')
-data_clean.insert(0, 'Id', coluna_Id)
+# drop the velocities, since it's not being used
+dataClean = dataClean.drop(columns=['v_x_1', 'v_y_1', 'v_x_2', 'v_y_2', 'v_x_3', 'v_y_3'], inplace=False)
+# it's not necessary to have the initial positions
+# the solution wants to predict positions where t > 0.0
+dataClean = dataClean[(dataClean['t'] != 0.0)]
+# asserting the Id column
+colunaId = dataClean.pop('Id')
+dataClean.insert(0, 'Id', colunaId)
 
-# 80% to train, 20% to val
-train, val = train_test_split(data_clean, test_size=0.2, random_state=42)
-one_percent_train, _ = train_test_split(train, train_size=0.01, random_state=42)
-one_percent_val, _ = train_test_split(val, train_size=0.01, random_state=42)
+# 80% to train, 20% to val, use only 1% of the data 
+train, val = train_test_split(dataClean, test_size=0.2, random_state=42)
+onePercentTrain, _ = train_test_split(train, train_size=0.01, random_state=42)
+onePercentVal, _ = train_test_split(val, train_size=0.01, random_state=42)
 
+# get the X_test and change the name of the columns
 test = pd.read_csv('./X_test.csv')
 cols = ['Id','t','x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position']
 test.columns = cols
 
-# Definindo as features de entrada e as variáveis alvo
-features_X = ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position', 't']
+# features are the columns of entrance, to get the final positions, depending on the time and initial positions (that are the features)
+featuresX = ['x1_initial_position', 'y1_initial_position', 'x2_initial_position', 'y2_initial_position', 'x3_initial_position', 'y3_initial_position', 't']
+# y are the final positions, calculated depending on the initial positions and time
 y = ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']
 
-#sns.pairplot(data_clean[features_X + y].sample(200), kind="hist")
-
-corr = data_clean[features_X + y].corr()
-#sns.heatmap(corr, annot=True)
-sorted = corr.abs().unstack().sort_values(ascending=False)
-print(sorted.to_string())
-
-correlated_features = [
-    ('y1_initial_position',  'x1_initial_position'),
+# y1 and x1 are not displaying any values, which means that both can be eliminated since it will not afect the model
+# y2 and y3 are highly correlated between each other, one needs to be eliminated
+# x3 and x2 are highly correlated between each other, one needs to be eliminated
+correlatedFeatures = [
+    ('y1_initial_position',  'x1_initial_position'), 
     ('x1_initial_position',  'y1_initial_position'),
     ('y2_initial_position',  'y3_initial_position'),
     ('x3_initial_position',  'x2_initial_position')
 ]
 
-features_to_remove = []
-for feature_pair in correlated_features:
-    features_to_remove.append(feature_pair[1])
+# eliminating the second element of the pair of features
+# no need to eliminate both, because if one it's eliminated then the other one will not be correlated with nothing else
+featuresToRemove = []
+for featurePair in correlatedFeatures:
+    featuresToRemove.append(featurePair[1])
     
-features_X = [f for f in features_X if f not in features_to_remove]
+featuresX = [feature for feature in featuresX if feature not in featuresToRemove]
 
-# Usar apenas 1% dos dados de treino e validação
-entry_train = one_percent_train[features_X]
-output_train = one_percent_train[y]
+# assigning the inputs and outputs
+entryTrain = onePercentTrain[featuresX]
+outputTrain = onePercentTrain[y]
+entryVal = onePercentVal[featuresX]
+outputVal = onePercentVal[y]
 
-entry_val = one_percent_val[features_X]
-output_val = one_percent_val[y]
+entryTest = test[featuresX]
 
-entry_test = test[features_X]
+# degree chosen was 14, no need to do loops
+def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degree=14, max_features=None):
+    bestRmse = 2
+    bestModel = None
+    bestDegree = None
+    bestAlpha = None
 
-def validate_poly_regression(X_train, y_train, X_val, y_val, regressor=None, degrees=range(1,15), max_features=None):
-    best_rmse = float('inf')
-    best_model = None
-    best_degree = None
-    best_alpha = None
-
-    # Loop pelos graus polinomiais
-    for degree in degrees:
-    # RidgeCV para ajustar os valores de alpha
-        regressor = RidgeCV(alphas=np.logspace(-6, 6, 13), store_cv_results=True)
-    #select = SelectKBest(f_regression, k=50)
-    # Pipeline com as transformações necessárias
-        poly_reg_model = make_pipeline(PolynomialFeatures(degree),  StandardScaler(), regressor)
-        poly_reg_model.fit(X_train, y_train)
-    # Previsões
-        y_pred = poly_reg_model.predict(X_val)
-        rmse = np.sqrt(mean_squared_error(y_val, y_pred))
-
-    # Número de características geradas
-        poly_features = poly_reg_model.named_steps['polynomialfeatures']
-        print(f"Degree {degree}: Number of features = {poly_features.n_output_features_}, Best alpha: {regressor.alpha_}")
-
-    # Atualiza se o RMSE for melhor
-        if rmse < best_rmse:
-            best_rmse = rmse
-            best_model = poly_reg_model
-            best_degree = degree
-            best_alpha = regressor.alpha_
-
-    print(f"Best Degree: {best_degree}, Best Alpha: {best_alpha}, Best RMSE: {best_rmse}")
-    return best_model, best_rmse, best_degree, best_alpha
-
-# Rodando a validação
+    # loop degrees
+    #for degree in degrees:
+    regressor = RidgeCV(alphas=np.logspace(-6, 6, 13), store_cv_results=True)
+        # pipeline with StandardScaler and PolynomialFeatures
+    polyRegModel = make_pipeline(PolynomialFeatures(degree),  StandardScaler(), regressor)
+    polyRegModel.fit(X_train, y_train)
     
-#for n in range(0,9):
-best_model, best_rmse, best_degree, best_alpha = validate_poly_regression(entry_train, output_train, entry_val, output_val)
-#    print(f"Best Model: {best_model},Best Degree: {best_degree}, Best Alpha: {best_alpha}, Best RMSE: {best_rmse}")
+    yPred = polyRegModel.predict(X_val)
+    rmse = np.sqrt(mean_squared_error(y_val, yPred))
 
+    polyFeatures = polyRegModel.named_steps['polynomialfeatures']
+    print(f"Degree {degree}: Number of features = {polyFeatures.n_output_features_}, Best alpha: {regressor.alpha_}")
 
-# Previsões com o melhor modelo
-output_val_prediction = best_model.predict(entry_val)
-output_train_prediction = best_model.predict(entry_train)
-# output_test_prediction= best_model.predict(entry_test)
-# Cálculo do RMSE no conjunto de treino e validação
-rmse_train = math.sqrt(mean_squared_error(output_train, output_train_prediction))
-rmse_val = math.sqrt(mean_squared_error(output_val, output_val_prediction))
+        # updates to the best parameters of the model
+    if rmse < bestRmse:
+        bestRmse = rmse
+        bestModel = polyRegModel
+        bestDegree = degree            
+        bestAlpha = regressor.alpha_
 
-print(f"Train RMSE (best model): {rmse_train}")
-print(f"Validation RMSE (best model): {rmse_val}")
+    print(f"Best Degree: {bestDegree}, Best Alpha: {bestAlpha}, Best RMSE: {bestRmse}")
+    return bestModel, bestRmse, bestDegree, bestAlpha
 
-# Função para plotar os gráficos y vs y_pred
+bestModel, bestRmse, bestDegree, bestAlpha = validate_poly_regression(entryTrain, outputTrain, entryVal, outputVal)
+
+outputValPrediction = bestModel.predict(entryVal)
+outputTrainPrediction = bestModel.predict(entryTrain)
+
+# calculate rmse values 
+rmseTrain = math.sqrt(mean_squared_error(outputTrain, outputTrainPrediction))
+rmseVal = math.sqrt(mean_squared_error(outputVal, outputValPrediction))
+
+print(f"Train RMSE (best model): {rmseTrain}")
+print(f"Validation RMSE (best model): {rmseVal}")
+
+# plot
 def plot_y_yhat(y_val, y_pred, plot_title="plot"):
     labels = ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']
     MAX = 500
@@ -149,17 +145,16 @@ def plot_y_yhat(y_val, y_pred, plot_title="plot"):
     plt.savefig(plot_title + '.pdf')
     plt.show()
 
-# Plotando os resultados
-#plot_y_yhat(np.array(output_val), output_val_prediction, plot_title="y_yhat_val")
-#plot_y_yhat(np.array(output_train), output_train_prediction, plot_title="y_yhat_train")
+plot_y_yhat(np.array(outputVal), outputValPrediction, plot_title="y_yhat_val_polynomial")
+plot_y_yhat(np.array(outputTrain), outputTrainPrediction, plot_title="y_yhat_train_polynomial")
 
-# Previsões finais para o conjunto de teste
 columns = ['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']
+# create a DataFrame from the predicted values
+df = pd.DataFrame(bestModel.predict(entryTest), columns=columns)
+# add a column for the 'id' and reorder the columns to have the output file (submission file) in the expected structure
+df['id'] = df.index
+df = df[['id', 'x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
 
-df_output = pd.DataFrame(best_model.predict(entry_test), columns=columns)
-# df_output = pd.DataFrame(output_test_prediction, columns=columns)
-df_output['id'] = df_output.index
-df_output = df_output[['id', 'x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
-
-output_path = ('./reduced_polynomial_submission.csv')
-df_output.to_csv(output_path,index=False)
+# extract the submission file
+outputPath = ('./reduced_polynomial_submission.csv')
+df.to_csv(outputPath,index=False)
